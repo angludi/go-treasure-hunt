@@ -40,6 +40,7 @@ func main() {
 	fmt.Println(title)
 	DrawLine(len(title))
 
+	// Set player location start point
 	self.X = 1
 	self.Y = 1
 
@@ -159,23 +160,20 @@ func Move(key rune, position Position) (response MoveResponse) {
 		wrongKey = true
 	}
 
-	response.Position = position
-	response.WrongDirection = true
+	response.Position = newPosition
+	response.WrongDirection = false
 
-	if !wrongKey {
-		if CheckTreasure(newPosition) {
-			response.Position = newPosition
-			response.WrongDirection = false
-			response.GotTheTreasure = true
-		} else if !CheckOutside(newPosition) && !CheckObstacle(newPosition) {
-			response.Position = newPosition
-			response.WrongDirection = false
-		}
+	if CheckTreasure(newPosition) {
+		response.GotTheTreasure = true
+	} else if CheckOutOfGrid(newPosition) || CheckObstacle(newPosition) || wrongKey {
+		response.Position = position
+		response.WrongDirection = true
 	}
 
 	return response
 }
 
+// Check  if posisition is an obstacle
 func CheckObstacle(position Position) bool {
 	for _, obstacle := range obstacles {
 		x := obstacle[0]
@@ -188,13 +186,15 @@ func CheckObstacle(position Position) bool {
 	return false
 }
 
-func CheckOutside(position Position) bool {
+// Check if position is out of grid
+func CheckOutOfGrid(position Position) bool {
 	if position.X < 1 || position.X > GRID_WIDTH || position.Y < 1 || position.Y > GRID_HEIGHT {
 		return true
 	}
 	return false
 }
 
+// Check if position is location of the treasure
 func CheckTreasure(position Position) bool {
 	if position.X == treasure.X && position.Y == treasure.Y {
 		return true
@@ -202,6 +202,7 @@ func CheckTreasure(position Position) bool {
 	return false
 }
 
+// Quit the game
 func ExitTheGame() {
 	fmt.Println("Thank's for playing!")
 	os.Exit(0)
