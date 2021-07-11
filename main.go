@@ -13,8 +13,11 @@ const (
 	GRID_WIDTH  = 6
 	GRID_HEIGHT = 4
 
-	ERR_DIRECTION = "You can not move to that direction!"
+	ERR_DIRECTION = "Oh no, you hit obstacle! Better luck next time!"
 	GET_TREASURE  = "Yeaaay, you got the treasure!"
+	NO_LUCK = "Better luck next time!"
+
+	ERR_MOVE = "Invalid move. Must be numeric!"
 )
 
 type Position struct {
@@ -32,7 +35,10 @@ var obstacles = [6][2]int{{2, 1}, {4, 2}, {6, 2}, {2, 3}, {3, 3}, {4, 3}}
 var treasure = HideTheTreasure()
 var self Position
 
+
 func main() {
+	var up, right, down int
+
 	title := "TREASURE HUNT"
 
 	// Header
@@ -44,36 +50,30 @@ func main() {
 	self.X = 1
 	self.Y = 1
 
-	DrawGrid()
+	DrawGrid(false)
 
-	for {
-		reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Please input steps (numeric) for up, right and down (Separate by space):")
+	var r = bufio.NewReader(os.Stdin)
+	fmt.Fscanf(r, "%d %d %d", &up, &right, &down)
 
-		fmt.Print("Where do you want to go? ")
+	response := Moves(up, right, down, self)
 
-		key, _, err := reader.ReadRune()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		if key == 'q' {
-			ExitTheGame()
-		}
-
-		response := Move(key, self)
-
-		if response.GotTheTreasure {
-			fmt.Println(GET_TREASURE)
-			ExitTheGame()
-		} else if response.WrongDirection {
-			fmt.Println(ERR_DIRECTION)
-		}
-
-		self = response.Position
-
-		DrawGrid()
+	var msgResult string
+	if response.GotTheTreasure {
+		msgResult = GET_TREASURE
+	}else if response.WrongDirection {
+		msgResult = ERR_DIRECTION
+	} else {
+		msgResult = NO_LUCK
 	}
 
+	self = response.Position
+
+	DrawGrid(true)
+	fmt.Println(msgResult)
+	fmt.Println("Player Position:", self)
+	fmt.Println("Treasure Position:", treasure)
+	ExitTheGame()
 }
 
 func HideTheTreasure() Position {
@@ -101,7 +101,7 @@ func DrawLine(size int) {
 	fmt.Println(strings.Repeat("-", size))
 }
 
-func DrawGrid() {
+func DrawGrid(showTreasure bool) {
 	// I'll give you a space
 	fmt.Println()
 	for i := GRID_HEIGHT + 1; i >= 0; i-- {
@@ -121,7 +121,7 @@ func DrawGrid() {
 					} else if CheckObstacle(pos) {
 						// Obstacle
 						fmt.Print("#")
-					} else if CheckTreasure(pos) {
+					} else if CheckTreasure(pos) && showTreasure {
 						// The Treasure
 						fmt.Print("$")
 					} else {
@@ -137,6 +137,35 @@ func DrawGrid() {
 	}
 }
 
+func Moves(up, right, down int, position Position) (response MoveResponse) {
+	for i := 0; i < up; i++ {
+		response = Move('u', position)
+		if response.WrongDirection {
+			return
+		}
+		position = response.Position
+	}
+
+	for i := 0; i < right; i++ {
+		response = Move('r', position)
+		if response.WrongDirection {
+			return
+		}
+		position = response.Position
+	}
+
+	for i := 0; i < down; i++ {
+		response = Move('d', position)
+		if response.WrongDirection {
+			return
+		}
+		position = response.Position
+	}
+
+	return
+}
+
+// Move player by key pressed
 func Move(key rune, position Position) (response MoveResponse) {
 	var wrongKey bool
 	var newPosition Position
